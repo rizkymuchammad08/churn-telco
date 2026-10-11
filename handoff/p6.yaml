@@ -1,0 +1,47 @@
+part: P6
+adapter: telco_ibm_csv_nontemporal
+files:
+  - reports/final_report.md
+  - CHANGELOG.md
+  - docs/model_card.md
+  - docs/recommendations.md
+  - templates/model_card.md.j2
+  - templates/recommendations.md.j2
+  - src/reporting/trace.py
+  - src/reporting/dashboard.py
+  - tests/test_assumptions_traceability.py
+  - tests/test_handoff.py
+  - tests/test_dashboard_smoke.py
+# Files owned by other parts that P6 touches.
+modifies:
+  - README.md
+  - scripts/scan_placeholders.py
+  - tests/test_render.py
+  - templates/final_report.md.j2
+  - src/reporting/render.py
+  - src/models/train.py
+  - Makefile
+  - pyproject.toml
+  - constraints.txt
+yaml_keys_consumed:
+  params: [data_source, paths]
+  assumptions: [save_rate_source]
+yaml_keys_produced:
+  params: []
+  assumptions: []
+public_api:
+  - trace.template_literals(template_text) -> list[str]
+  - trace.numeric_leaves(*sources) -> list[float]
+  - trace.numbers_in(text, changelog=False) -> list[str]
+  - trace.untraceable(text, leaves, changelog=False) -> list[str]
+  - trace.strip_code(md) -> str
+  - trace.load_leaves(root) -> list[float]
+  - dashboard.load_view(root=None) -> View
+  - dashboard.contact_table(view) -> DataFrame
+  - dashboard.DashboardError(code, message)
+  - dashboard.main() -> None
+entry_points:
+  - python -m src.reporting.render
+  - streamlit run src/reporting/dashboard.py
+check: make check-p6
+open_issues: []

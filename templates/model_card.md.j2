@@ -1,0 +1,82 @@
+{% if banner %}{{ banner }}
+
+{% endif %}# Model Card: Telco Churn Prediction
+
+Model `{{ selected }}` with `{{ calibration_method }}` calibration. All figures are rendered from `assumptions.yaml`, `reports/metrics.json`, `reports/roi.json`, and `reports/ablation.json`.
+{% if conditional %}
+> **Conditional value.** save_rate ({{ "%.2f"|format(save_rate) }}) has status `{{ save_rate_source }}`. The business-value figures on this card hold only if that assumption is true.
+{% endif %}
+## 1. Purpose and intended use
+
+Rank customers by calibrated churn probability to choose whom to contact in a retention campaign. Decision rule: contact customers whose probability is above p* = {{ "%.4f"|format(p_star) }}, up to the campaign capacity. Capacity is {{ campaign_capacity }} contacts per period from a population of {{ population_per_period }} customers.
+
+Out of scope: predicting churn within a specific time window, estimating the per-customer effect of an intervention, and scoring customers outside the scoring domain (see Limitations and risks).
+
+## 2. Data
+
+- Source: `{{ data_source }}`, file `{{ data_file }}`. One row per customer, no dates, so there is no temporal validation.
+- Input data sha256: `{{ input_data_hash }}` (canonical content after cleaning; recompute with `src.data.load.data_hash`).
+- Stratified random split: {{ split.train }} train, {{ split.calib }} calibration, {{ split.test }} test rows. The test set contains {{ n_pos }} churners (base rate {{ "%.3f"|format(base_rate) }}).
+- The `tenure` and `TotalCharges` columns are excluded from the features by policy, not because leakage was demonstrated. Using both would raise PR-AUC by {{ "%.3f"|format(ablation.pr_auc.delta) }} on average (diagnostic; see the final report).
+
+## 3. Model and selection
+
+Primary metric: {{ primary_metric }}, chosen via cross-validation, not on the test set. The calibrator is trained only on the calibration set; the test set is touched once.
+
+| Model | PR-AUC (CV) | PR-AUC (test) | ROC-AUC (test) | Lift@{{ k }} (test) | Brier (test) |
+|---|---|---|---|---|---|
+{% for m in models %}| {{ m.name }} | {{ "%.3f"|format(m.cv) }} | {{ "%.3f"|format(m.pr_auc) }} [{{ "%.3f"|format(m.ci.pr_auc.lo) }}, {{ "%.3f"|format(m.ci.pr_auc.hi) }}] | {{ "%.3f"|format(m.roc_auc) }} [{{ "%.3f"|format(m.ci.roc_auc.lo) }}, {{ "%.3f"|format(m.ci.roc_auc.hi) }}] | {{ "%.2f"|format(m.lift_at_k) }} [{{ "%.2f"|format(m.ci.lift_at_k.lo) }}, {{ "%.2f"|format(m.ci.lift_at_k.hi) }}] | {{ "%.3f"|format(m.brier) }} [{{ "%.3f"|format(m.ci.brier.lo) }}, {{ "%.3f"|format(m.ci.brier.hi) }}] |
+{% endfor %}
+Test-set columns show the point estimate and, in brackets, the {{ ci_pct }}% bootstrap interval ({{ n_boot }} resamples of the test rows). The intervals capture test-set sampling noise only, not variation from training or from changes over time; the CV column is a mean without an interval.
+
+{% if tuning.enabled %}### 3.1 Hyperparameters
+
+Hyperparameters were set by a light grid search under a decision rule locked before the run (rule hash `{{ tuning.rule_hash }}`), using {{ tuning.folds }}-fold cross-validation on the train rows only. A candidate replaces the default only if its paired gain over the default exceeds {{ "%.1f"|format(tuning.margin_se) }} standard error.
+
+{% for m in tuning.models %}- `{{ m.name }}`: {{ "replaced the default `" ~ m.default ~ "` with `" ~ m.chosen ~ "`" if m.replaced else "kept the default `" ~ m.default ~ "`" }} (paired gain {{ "%.4f"|format(m.gain) }}, required more than {{ "%.4f"|format(m.required) }}).
+{% endfor %}
+{% endif %}## 4. Performance on the test set
+
+| Metric | {{ selected }} | prior_rate (baseline) |
+|---|---|---|
+| PR-AUC | {{ "%.3f"|format(sel.pr_auc) }} [{{ "%.3f"|format(sel.ci.pr_auc.lo) }}, {{ "%.3f"|format(sel.ci.pr_auc.hi) }}] | {{ "%.3f"|format(prior.pr_auc) }} [{{ "%.3f"|format(prior.ci.pr_auc.lo) }}, {{ "%.3f"|format(prior.ci.pr_auc.hi) }}] |
+| ROC-AUC | {{ "%.3f"|format(sel.roc_auc) }} [{{ "%.3f"|format(sel.ci.roc_auc.lo) }}, {{ "%.3f"|format(sel.ci.roc_auc.hi) }}] | {{ "%.3f"|format(prior.roc_auc) }} [{{ "%.3f"|format(prior.ci.roc_auc.lo) }}, {{ "%.3f"|format(prior.ci.roc_auc.hi) }}] |
+| Precision@{{ k }} | {{ "%.3f"|format(sel.precision_at_k) }} [{{ "%.3f"|format(sel.ci.precision_at_k.lo) }}, {{ "%.3f"|format(sel.ci.precision_at_k.hi) }}] | {{ "%.3f"|format(prior.precision_at_k) }} [{{ "%.3f"|format(prior.ci.precision_at_k.lo) }}, {{ "%.3f"|format(prior.ci.precision_at_k.hi) }}] |
+| Recall@{{ k }} | {{ "%.3f"|format(sel.recall_at_k) }} [{{ "%.3f"|format(sel.ci.recall_at_k.lo) }}, {{ "%.3f"|format(sel.ci.recall_at_k.hi) }}] | {{ "%.3f"|format(prior.recall_at_k) }} [{{ "%.3f"|format(prior.ci.recall_at_k.lo) }}, {{ "%.3f"|format(prior.ci.recall_at_k.hi) }}] |
+| Lift@{{ k }} | {{ "%.2f"|format(sel.lift_at_k) }} [{{ "%.2f"|format(sel.ci.lift_at_k.lo) }}, {{ "%.2f"|format(sel.ci.lift_at_k.hi) }}] | {{ "%.2f"|format(prior.lift_at_k) }} [{{ "%.2f"|format(prior.ci.lift_at_k.lo) }}, {{ "%.2f"|format(prior.ci.lift_at_k.hi) }}] |
+| Brier | {{ "%.3f"|format(sel.brier) }} [{{ "%.3f"|format(sel.ci.brier.lo) }}, {{ "%.3f"|format(sel.ci.brier.hi) }}] | {{ "%.3f"|format(prior.brier) }} [{{ "%.3f"|format(prior.ci.brier.lo) }}, {{ "%.3f"|format(prior.ci.brier.hi) }}] |
+| ECE | {{ "%.3f"|format(sel.ece) }} | {{ "%.3f"|format(prior.ece) }} |
+
+Brackets show the {{ ci_pct }}% bootstrap interval, as in the model table above. ECE has no interval: a bootstrap of ECE is biased upward, so it would not bracket the point estimate.
+
+## 5. Calibration
+
+ECE dropped from {{ "%.3f"|format(ece_raw) }} to {{ "%.3f"|format(ece) }}; tolerance is {{ "%.2f"|format(tolerance) }}, so the result is {{ "within" if within_tolerance else "outside" }} tolerance.{{ " The probabilities should not yet be read as absolute values." if not within_tolerance else "" }}
+
+## 6. Performance by segment
+
+| Segment | n | Churners | Base rate | Mean p | Reliable |
+|---|---|---|---|---|---|
+{% for s in segments %}| {{ s.feature }}: {{ s.value }} | {{ s.n }} | {{ s.n_pos }} | {{ "%.3f"|format(s.base_rate) }} | {{ "%.3f"|format(s.mean_p) }} | {{ "yes" if s.reliable else "no" }} |
+{% endfor %}
+Segments marked as not reliable are too small or contain only one class; do not use them for decisions.
+
+## 7. Limitations and risks
+
+- Evaluation uses a test set of {{ split.test }} rows; the intervals reflect test-set sampling noise only (not training variability or change over time), and differences between models have not been formally tested.
+- There is no time axis: performance in future periods is not observed.
+- Customers with tenure below the `domain.min_tenure_months` limit in `params.yaml` are flagged `out_of_domain` at prediction time and must not be scored by this model.
+- Business value depends on save_rate ({{ "%.2f"|format(save_rate) }}, `{{ save_rate_source }}`); the model does not measure the effect of the intervention.
+- The model uses customer attributes only; it has no behavioral or interaction-history features.
+
+---
+
+source_hash: `{{ source_hash }}`
+- assumptions.yaml: `{{ hashes.assumptions }}`
+- metrics.json: `{{ hashes.metrics }}`
+- roi.json: `{{ hashes.roi }}`
+- ablation.json: `{{ hashes.ablation }}`
+- train_data: `{{ model_hashes.train_data }}`
+- preprocess: `{{ model_hashes.preprocess }}`
+- model: `{{ model_hashes.model }}`
+- calibrator: `{{ model_hashes.calibrator }}`

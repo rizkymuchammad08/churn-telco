@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "churn-telco"
+version = "0.2.0"
+description = "Telco churn prediction: calibrated model and break-even-based contact decisions"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Muchammad Rizky" }]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+# Only the dashboard (`make dashboard`, src/reporting/dashboard.py) needs these.
+dashboard = [
+    "streamlit>=1.28",
+    "openpyxl>=3.1",
+]
+# Everything the test suite needs, including the dashboard tests and the notebook execution test.
+dev = [
+    "churn-telco[dashboard]",
+    "pytest>=7.4",
+    "ruff>=0.4",
+    "nbformat>=5.9",
+    "nbclient>=0.9",
+    "ipykernel>=6.25",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers -q"
+markers = [
+    "p1: foundation (configuration, Makefile, scaffolding)",
+    "p2: data",
+    "p3: features and label",
+    "p4: model",
+    "p5: ROI and recommendations",
+    "p6: reporting and final README",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["data", "reports", "artifacts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

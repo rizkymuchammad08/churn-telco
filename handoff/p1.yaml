@@ -1,0 +1,36 @@
+part: P1
+adapter: telco_ibm_csv_nontemporal
+files:
+  - Makefile
+  - pyproject.toml
+  - constraints.txt
+  - .gitignore
+  - .env.example
+  - README.md
+  - params.yaml
+  - assumptions.yaml
+  - docs/adaptation_path_a.md
+  - src/config.py
+  - scripts/check_handoff.py
+  - scripts/scan_placeholders.py
+  - tests/test_assumptions_schema.py
+  - data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv
+  - templates/.gitkeep
+  - reports/.gitkeep
+yaml_keys_consumed:
+  params: []
+  assumptions: []
+yaml_keys_produced:
+  params:
+    [seed, data_source, data_source_allowed, paths, sample, schema, temporal, leakage, split, models, calibration, evaluation]
+  assumptions:
+    [currency, baseline_churn_rate, target_churn_rate, clv, cost_intervention, save_rate, save_rate_source, campaign_capacity, population_per_period]
+public_api:
+  - config.load_params(path=None) -> dict
+  - config.load_assumptions(path=None) -> dict
+  - config.load_all(params_path=None, assumptions_path=None) -> (dict, dict)
+  - config.cross_check(params, assumptions) -> None
+  - config.business_status(assumptions) -> str
+  - config.breakeven_threshold(assumptions) -> float
+check: make check-p1
+open_issues: []

@@ -1,0 +1,457 @@
+{
+  "data": "raw",
+  "data_source": "real_public_ibm_telco",
+  "rule_hash": "d9e761020dd21f1e7447b404b8321d31a7ad056fed2ef6b1a001fda460a1dddc",
+  "settings": {
+    "psi_warn": 0.1,
+    "psi_alert": 0.25,
+    "n_bins": 10,
+    "max_discrete_levels": 10,
+    "psi_eps": 0.0001,
+    "min_rows": 200
+  },
+  "reference": {
+    "rows": 4225,
+    "train_data_hash": "4d1ea9f3002fe8dbe2c541c6558bb308c1579239a383668397666d0eccdec323"
+  },
+  "features": {
+    "is_male": {
+      "sources": [
+        "gender"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.49609467455621303,
+        0.503905325443787,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "SeniorCitizen": {
+      "sources": [
+        "SeniorCitizen"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.8409467455621302,
+        0.15905325443786983,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "Partner": {
+      "sources": [
+        "Partner"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.5204733727810651,
+        0.4795266272189349,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "Dependents": {
+      "sources": [
+        "Dependents"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.6944378698224852,
+        0.30556213017751477,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "PhoneService": {
+      "sources": [
+        "PhoneService"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.0927810650887574,
+        0.9072189349112426,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "PaperlessBilling": {
+      "sources": [
+        "PaperlessBilling"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.3957396449704142,
+        0.6042603550295857,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "MultipleLines": {
+      "sources": [
+        "MultipleLines"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.5770414201183431,
+        0.4229585798816568,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "OnlineSecurity": {
+      "sources": [
+        "OnlineSecurity"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7128994082840237,
+        0.28710059171597635,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "OnlineBackup": {
+      "sources": [
+        "OnlineBackup"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.65301775147929,
+        0.3469822485207101,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "DeviceProtection": {
+      "sources": [
+        "DeviceProtection"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.6546745562130177,
+        0.34532544378698227,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "TechSupport": {
+      "sources": [
+        "TechSupport"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7048520710059172,
+        0.2951479289940828,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "StreamingTV": {
+      "sources": [
+        "StreamingTV"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.6035502958579881,
+        0.39644970414201186,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "StreamingMovies": {
+      "sources": [
+        "StreamingMovies"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.605207100591716,
+        0.39479289940828405,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "InternetService_DSL": {
+      "sources": [
+        "InternetService"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.6598816568047338,
+        0.3401183431952663,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "InternetService_Fiber_optic": {
+      "sources": [
+        "InternetService"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.5545562130177515,
+        0.4454437869822485,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "Contract_One_year": {
+      "sources": [
+        "Contract"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7945562130177515,
+        0.20544378698224852,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "Contract_Two_year": {
+      "sources": [
+        "Contract"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7540828402366864,
+        0.2459171597633136,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "PaymentMethod_Bank_transfer_automatic": {
+      "sources": [
+        "PaymentMethod"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7765680473372781,
+        0.2234319526627219,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "PaymentMethod_Credit_card_automatic": {
+      "sources": [
+        "PaymentMethod"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7810650887573964,
+        0.21893491124260356,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "PaymentMethod_Mailed_check": {
+      "sources": [
+        "PaymentMethod"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.7749112426035503,
+        0.2250887573964497,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "MonthlyCharges": {
+      "sources": [
+        "MonthlyCharges"
+      ],
+      "kind": "continuous",
+      "edges": [
+        20.05,
+        25.1,
+        46.130000000000045,
+        59.65,
+        70.75,
+        79.4,
+        86.03000000000002,
+        94.65,
+        103.02999999999999
+      ],
+      "ref_props": [
+        0.10414201183431952,
+        0.09751479289940829,
+        0.09846153846153846,
+        0.10035502958579881,
+        0.10082840236686391,
+        0.09893491124260355,
+        0.09964497041420119,
+        0.10059171597633136,
+        0.09940828402366864,
+        0.10011834319526627
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "n_addons": {
+      "sources": [
+        "OnlineSecurity",
+        "OnlineBackup",
+        "DeviceProtection",
+        "TechSupport",
+        "StreamingTV",
+        "StreamingMovies"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0
+      ],
+      "ref_props": [
+        0.3081656804733728,
+        0.13372781065088757,
+        0.14958579881656806,
+        0.16497041420118344,
+        0.11905325443786982,
+        0.08520710059171598,
+        0.03928994082840237,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "has_internet": {
+      "sources": [
+        "InternetService"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.2144378698224852,
+        0.7855621301775148,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    },
+    "is_autopay": {
+      "sources": [
+        "PaymentMethod"
+      ],
+      "kind": "discrete",
+      "levels": [
+        0.0,
+        1.0
+      ],
+      "ref_props": [
+        0.5576331360946746,
+        0.4423668639053254,
+        0.0
+      ],
+      "psi_warn": 0.1,
+      "psi_alert": 0.25
+    }
+  },
+  "content_hash": "1976e5aa8cd431e61af5986effc10446354037b51c25d2b8ced8468e2b326cbf"
+}

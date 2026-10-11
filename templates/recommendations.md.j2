@@ -1,0 +1,41 @@
+{% if banner %}{{ banner }}
+
+{% endif %}# Recommendations: Churn Retention Campaign
+{% if conditional %}
+> **Conditional value.** save_rate ({{ "%.2f"|format(save_rate) }}) has status `{{ save_rate_source }}`; it is not a measured result. All business-value figures in this document are scenarios.
+{% endif %}
+## 1. Decision summary
+
+Contact customers whose calibrated churn probability is above p* = {{ "%.4f"|format(p_star) }}, up to {{ k_test }} contacts on the test set. On the test set, this policy contacts {{ model_policy.n_contacts }} customers, including {{ "%.1f"|format(model_policy.n_churners_contacted) }} churners; random contact of the same size reaches {{ "%.1f"|format(random_policy.n_churners_contacted) }} churners.
+
+- Incremental value versus no contact: {{ "{:,.0f}".format(inc_vs_none) }} {{ currency }}{{ " (conditional value)" if conditional else "" }}.
+- Incremental value versus random contact: {{ "{:,.0f}".format(inc_vs_random) }} {{ currency }}{{ " (conditional value)" if conditional else "" }}.
+{% if be_vs_none is not none %}- Break-even save_rate versus no contact: {{ "%.3f"|format(be_vs_none) }}. The assumed save_rate ({{ "%.2f"|format(save_rate) }}) is {{ "above" if save_rate > be_vs_none else "below" }} that limit.
+{% endif %}
+## 2. Recommended
+
+- **Measure save_rate in a controlled trial** (a holdout group that is not contacted) before scaling up the campaign. Once measured, update `save_rate` and `save_rate_source` in `assumptions.yaml`, then run `make all` so that p* and all documents are recomputed.
+- **Use the p* threshold, not the ranking alone.** The selected model is `{{ selected }}`; customers below p* are not contacted even when capacity remains, because under the current assumptions the net value per contact below p* is negative.
+- **Re-evaluate on the full data** (population of {{ population_per_period }} customers per period, capacity {{ campaign_capacity }}) before using the performance figures for planning. The current figures come from a test set of {{ split.test }} rows with {{ n_pos }} churners.
+- **Monitor calibration.** Calibrated ECE is {{ "%.3f"|format(ece) }} against a tolerance of {{ "%.2f"|format(tolerance) }}: {{ "within" if within_tolerance else "outside" }} tolerance.{{ " Re-check on a larger test set before using the probabilities as absolute values." if not within_tolerance else "" }}
+- **Read per-segment figures only for reliable segments.** The base rate and mean p of each segment are in the Performance by segment section of the final report; monitor them per segment every period.
+
+## 3. NOT recommended
+
+- **Treating net value as a forecast of results.** save_rate has status `{{ save_rate_source }}`; the net-value figures are only a scenario until save_rate is measured.
+- **Scaling test-set results up to the whole population.** The test set has only {{ split.test }} rows ({{ n_pos }} churners); the uncertainty of extrapolating to {{ population_per_period }} customers has not been quantified.
+{% if best_test_differs %}- **Switching the selected model based on test scores.** `{{ best_test.name }}` reaches a test PR-AUC of {{ "%.3f"|format(best_test.pr_auc) }}, above the selected model `{{ selected }}`, but selection was done by {{ primary_metric }} in cross-validation. Re-selecting from the test set would make the test set no longer independent, and the significance of the difference on {{ split.test }} rows has not been tested.
+{% endif %}{% if not within_tolerance %}- **Reading probabilities as absolute values.** Calibrated ECE ({{ "%.3f"|format(ece) }}) is outside the tolerance ({{ "%.2f"|format(tolerance) }}); use the probabilities for ranking and thresholding, not as an estimate of each customer's churn percentage.
+{% endif %}{% if unreliable_segments %}- **Using unreliable segments for decisions:** {{ unreliable_segments|join(", ") }}. Their samples are too small or contain only one class.
+{% endif %}- **Changing the exclusion of `tenure` and `TotalCharges` without dated data.** Using both would raise PR-AUC by {{ "%.3f"|format(ablation.pr_auc.delta) }} on average, but the data has no dates, so it cannot be shown whether these values are known at prediction time. Treat the gain as unconfirmed, and decide the policy with the owner of the data.
+- **Interpreting the score as an intervention effect.** The score estimates churn risk, not who can be saved; save_rate is assumed to be the same for all customers. An uplift model is a separate piece of work.
+- **Lowering p* or raising capacity just to reach more churners.** p* is derived from clv ({{ "{:,.0f}".format(clv) }} {{ currency }}), intervention cost ({{ "{:,.0f}".format(cost_intervention) }} {{ currency }}), and save_rate; changing it means changing the assumptions, and net value must be recomputed.
+- **Scoring customers outside the scoring domain.** Customers with tenure below `domain.min_tenure_months` in `params.yaml` are flagged `out_of_domain` and must not enter the contact list based on their score.
+
+---
+
+source_hash: `{{ source_hash }}`
+- assumptions.yaml: `{{ hashes.assumptions }}`
+- metrics.json: `{{ hashes.metrics }}`
+- roi.json: `{{ hashes.roi }}`
+- ablation.json: `{{ hashes.ablation }}`

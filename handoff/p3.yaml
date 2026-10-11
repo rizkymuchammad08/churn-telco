@@ -1,0 +1,36 @@
+part: P3
+adapter: telco_ibm_csv_nontemporal
+files:
+  - src/features/build.py
+  - src/features/leakage.py
+  - src/features/leaky_fixture.py
+  - src/features/spec.py
+  - docs/feature_spec.md
+  - tests/fixtures/sample_leaky.csv
+  - tests/test_features.py
+  - tests/test_leakage.py
+yaml_keys_consumed:
+  params: [seed, paths, schema, leakage]
+  assumptions: []
+yaml_keys_produced:
+  params: []
+  assumptions: []
+public_api:
+  - features.build.build_features(df, params) -> DataFrame
+  - features.build.build_labels(df, params) -> Series
+  - features.build.feature_names(params) -> list[str]
+  - features.build.feature_sources(params) -> dict[str, tuple[str, ...]]
+  - features.build.FeatureError(code, message)
+  - features.leakage.forbidden_columns(params) -> set[str]
+  - features.leakage.assert_no_forbidden(X, params) -> None
+  - features.leakage.abs_corr(X, y) -> Series
+  - features.leakage.check_correlation(X, y, params) -> Series
+  - features.leakage.LeakageError(code, message, columns)
+  - features.spec.render(params) -> str
+  - features.leaky_fixture.build(params) -> DataFrame
+entry_points:
+  - python -m src.features.build [--sample]
+  - python -m src.features.spec [--check]
+  - python -m src.features.leaky_fixture [--check]
+check: make check-p3
+open_issues: []

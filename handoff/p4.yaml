@@ -1,0 +1,111 @@
+part: P4
+adapter: telco_ibm_csv_nontemporal
+files:
+  - src/models/split.py
+  - src/models/train.py
+  - src/models/calibrate.py
+  - src/models/evaluate.py
+  - src/models/predict.py
+  - src/models/targeting.py
+  - src/models/ablation.py
+  - src/models/tuning.py
+  - src/models/monitoring.py
+  - reports/ablation.json
+  - reports/metrics.json
+  - reports/monitoring.json
+  - tests/conftest.py
+  - tests/test_split.py
+  - tests/test_train.py
+  - tests/test_calibrate.py
+  - tests/test_evaluate.py
+  - tests/test_predict.py
+  - tests/test_targeting.py
+  - tests/test_p4_handoff.py
+  - tests/test_ablation.py
+  - tests/test_tuning.py
+  - tests/test_monitoring.py
+  - tests/test_temporal_mode.py
+# Files owned by other parts that P4 touches (only for the new params keys and the path A equivalent).
+modifies:
+  - src/config.py
+  - params.yaml
+  - src/reporting/render.py
+  - src/reporting/trace.py
+  - templates/final_report.md.j2
+  - templates/model_card.md.j2
+  - docs/adaptation_path_a.md
+  - tests/test_assumptions_schema.py
+  - Makefile
+  - README.md
+yaml_keys_consumed:
+  params:
+    [seed, data_source, paths, schema, temporal, leakage, split, models, tuning, calibration, evaluation, segments, domain, monitoring]
+  assumptions:
+    [clv, cost_intervention, save_rate, save_rate_source, campaign_capacity, population_per_period]
+yaml_keys_produced:
+  params:
+    - models.hyperparams
+    - tuning
+    - evaluation.calibration_tolerance
+    - segments
+    - domain
+    - ablation.seeds
+    - paths.ablation
+    - paths.monitoring
+    - monitoring
+  assumptions: []
+public_api:
+  - split.make_split(df, params, seed=None, snapshot=None) -> Split  # temporal: snapshot defaults to schema.snapshot_column
+  - split.Split(train, calib, test, purged)
+  - split.SplitError(code, message)
+  - train.fit_one(name, X_train, y_train, params, seed=None) -> TrainedModel
+  - train.fit_all(X_train, y_train, params, assumptions=None, seed=None) -> (models, cv_scores, selected)
+  - train.train_model(X_train, y_train, params, assumptions=None, seed=None) -> TrainedModel
+  - train.class_weights(y, params) -> ndarray
+  - train.cv_fold_scores(name, X, y, params, assumptions, seed) -> list[float]
+  - train.run(df, params, assumptions, split=None, seed=None) -> RunResult  # tunes first (tuning.tune), then selects
+  - tuning.tune(params, score_folds, seed) -> (effective_params, report)
+  - tuning.rule_hash(params) -> str
+  - tuning.verify_lock(params) -> str
+  - tuning.TuneError(code, message)
+  - train.save_bundle(bundle, path) -> Path
+  - train.load_bundle(path) -> Bundle
+  - train.TrainError(code, message)
+  - calibrate.fit_calibrator(p_raw_calib, y_calib, params) -> Calibrator
+  - calibrate.CalibrationError(code, message)
+  - evaluate.evaluate(y_true, p, params, *, k, segments=None) -> dict
+  - evaluate.by_segment(y_true, p, segments, params) -> dict
+  - evaluate.precision_at_k(y_true, score, k) -> float
+  - evaluate.recall_at_k(y_true, score, k) -> float
+  - evaluate.lift_at_k(y_true, score, k) -> float
+  - evaluate.brier(y_true, p) -> float
+  - evaluate.expected_calibration_error(y_true, p, bins) -> float
+  - evaluate.bootstrap_ci(y_true, p, params, k, seed) -> dict
+  - predict.predict(df, bundle, params) -> DataFrame
+  - predict.PredictError(code, message)
+  - targeting.p_star(assumptions) -> float
+  - targeting.capacity_for(n, assumptions) -> int
+  - targeting.plan_contacts(pred, assumptions, k=None) -> ContactPlan
+  - targeting.TargetingError(code, message)
+  - ablation.ablate(df, params, assumptions) -> dict
+  - monitoring.build_reference(X_train, params, *, train_hash) -> dict
+  - monitoring.check_alignment(monitoring, params) -> None  # every model feature has thresholds, none extra (E_MONITOR_FEATURES)
+  - monitoring.check_model(monitoring, bundle) -> None
+  - monitoring.assess(X, monitoring) -> DataFrame
+  - monitoring.validate(monitoring) -> None  # includes the content hash (E_MONITOR_HASH)
+  - monitoring.rule_hash(params) -> str
+  - monitoring.verify_lock(params) -> str  # E_MONITOR_LOCK, like tuning.verify_lock
+  - monitoring.content_hash(monitoring) -> str
+  - monitoring.seal(monitoring) -> dict
+  - monitoring.write_lock(params_path, new_hash) -> bool
+  - monitoring.load(path) -> dict
+  - monitoring.write(monitoring, path) -> Path
+  - monitoring.MonitorError(code, message)
+# The optional key schema.snapshot_column (temporal mode only) is absent from the default params.yaml.
+entry_points:
+  - python -m src.models.train [--sample]
+  - python -m src.models.ablation [--sample]
+  - python -m src.models.tuning [--check | --write-lock]
+  - python -m src.models.monitoring [--require-model | --write-lock]
+check: make check-p4
+open_issues: []

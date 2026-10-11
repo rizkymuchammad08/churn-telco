@@ -1,0 +1,42 @@
+part: P5
+adapter: telco_ibm_csv_nontemporal
+files:
+  - src/reporting/roi.py
+  - src/reporting/render.py
+  - templates/final_report.md.j2
+  - reports/roi.json
+  - tests/test_roi.py
+  - tests/test_render.py
+# Files owned by other parts that P5 touches.
+modifies:
+  - src/config.py
+  - Makefile
+yaml_keys_consumed:
+  params: [data_source, paths]
+  assumptions:
+    [clv, cost_intervention, save_rate, save_rate_source, campaign_capacity, population_per_period, currency]
+yaml_keys_optional:
+  assumptions: [operating_cost_per_year]
+yaml_keys_produced:
+  params: []
+  assumptions: []
+public_api:
+  - roi.net_value(outcome, assumptions, *, save_rate=None, years=1) -> float
+  - roi.incremental_value(a, b, assumptions, *, save_rate=None, years=1) -> float
+  - roi.breakeven_save_rate(a, b, assumptions) -> float | None
+  - roi.k_test(n_test, assumptions) -> int
+  - roi.outcome_from_mask(name, contacted, y_true) -> Outcome
+  - roi.random_policy(y_true, k) -> Outcome
+  - roi.model_policy(test_pred, assumptions, k=None) -> Outcome
+  - roi.build_roi(test_pred, assumptions, params, *, years=1) -> dict
+  - roi.RoiError(code, message)
+  - render.build_context(assumptions, metrics, roi, hashes) -> dict
+  - render.render_text(template_text, context) -> str
+  - render.render_report(assumptions_path, metrics_path, roi_path, template_path) -> str
+  - render.source_hash(hashes) -> str
+  - render.RenderError(code, message)
+entry_points:
+  - python -m src.reporting.roi
+  - python -m src.reporting.render
+check: make check-p5
+open_issues: []

@@ -1,0 +1,11 @@
+# Business assumptions. The values below are ILLUSTRATIVE and have status `assumed`.
+# While save_rate_source = assumed, all business values (net_value, ROI) are conditional.
+currency: USD
+baseline_churn_rate: 0.265
+target_churn_rate: 0.2
+clv: 1200
+cost_intervention: 40
+save_rate: 0.25
+save_rate_source: assumed
+campaign_capacity: 700
+population_per_period: 7043

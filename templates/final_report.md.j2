@@ -1,0 +1,97 @@
+{% if banner %}{{ banner }}
+
+{% endif %}# Final Report: Telco Churn Prediction
+
+Data source: `{{ data_source }}` (file `{{ data_file }}`). Selected model: `{{ selected }}`, with primary metric {{ primary_metric }}.
+
+Input data sha256: `{{ input_data_hash }}` (all file rows after cleaning, canonical content with rows sorted; recompute with `src.data.load.data_hash`).
+{% if conditional %}
+> **Conditional value.** save_rate ({{ "%.2f"|format(save_rate) }}) has status `{{ save_rate_source }}`; it is not a measured result. All business-value figures in this report hold only if that assumption is true.
+{% endif %}
+## 1. Data and split
+
+Stratified random split: {{ split.train }} train, {{ split.calib }} calibration, {{ split.test }} test rows. The test set contains {{ n_pos }} churners (base rate {{ "%.3f"|format(base_rate) }}). The test set is touched once; the calibrator is trained only on the calibration set.
+
+## 2. Model comparison
+
+| Model | PR-AUC (CV) | PR-AUC (test) | ROC-AUC (test) | Lift@{{ k }} (test) | Brier (test) |
+|---|---|---|---|---|---|
+{% for m in models %}| {{ m.name }} | {{ "%.3f"|format(m.cv) }} | {{ "%.3f"|format(m.pr_auc) }} [{{ "%.3f"|format(m.ci.pr_auc.lo) }}, {{ "%.3f"|format(m.ci.pr_auc.hi) }}] | {{ "%.3f"|format(m.roc_auc) }} [{{ "%.3f"|format(m.ci.roc_auc.lo) }}, {{ "%.3f"|format(m.ci.roc_auc.hi) }}] | {{ "%.2f"|format(m.lift_at_k) }} [{{ "%.2f"|format(m.ci.lift_at_k.lo) }}, {{ "%.2f"|format(m.ci.lift_at_k.hi) }}] | {{ "%.3f"|format(m.brier) }} [{{ "%.3f"|format(m.ci.brier.lo) }}, {{ "%.3f"|format(m.ci.brier.hi) }}] |
+{% endfor %}
+Test-set columns show the point estimate and, in brackets, the {{ ci_pct }}% bootstrap interval ({{ n_boot }} resamples of the test rows). The intervals capture test-set sampling noise only, not variation from training or from changes over time; the CV column is a mean without an interval.
+
+The model was selected by {{ primary_metric }} in cross-validation, not on the test set. Overlapping intervals mean the test set cannot separate those models; this is a visual check, not a formal test of the difference.
+
+{% if tuning.enabled %}### 2.1 Hyperparameter tuning
+
+Each model's default hyperparameters were compared with a small grid by {{ tuning.folds }}-fold cross-validation on the train rows only, scored by {{ tuning.metric }}. The calibration and test rows were not used. The rule was fixed and locked before the run (rule hash `{{ tuning.rule_hash }}`): the best candidate replaces the default only if its mean paired gain over the default across folds is positive and larger than {{ "%.1f"|format(tuning.margin_se) }} standard error of that gain; otherwise the default stays. Tuning folds use a different split from the model-selection folds (seed offset {{ tuning.seed_offset }}), so the CV column in the table above is not computed on the folds that chose the hyperparameters.
+
+{% for m in tuning.models %}**`{{ m.name }}`**
+
+| Candidate | PR-AUC (tuning CV) |
+|---|---|
+{% for c in m.candidates %}| `{{ c.config }}`{{ " (default)" if c.is_default else "" }} | {{ "%.3f"|format(c.cv) }} |
+{% endfor %}
+Best candidate: `{{ m.winner }}`; mean paired gain over the default {{ "%.4f"|format(m.gain) }}, required more than {{ "%.4f"|format(m.required) }}. Decision: {{ "replaced the default `" ~ m.default ~ "` with `" ~ m.chosen ~ "`" if m.replaced else "kept the default `" ~ m.default ~ "`" }}.
+
+{% endfor %}A gain this small is within what a different split could change; the tuning is a light check, not a search for a better model, and it does not change how the test set is used.
+
+{% endif %}## 3. Calibration
+
+Method: `{{ calibration_method }}`. ECE dropped from {{ "%.3f"|format(ece_raw) }} to {{ "%.3f"|format(ece) }}; tolerance is {{ "%.2f"|format(tolerance) }}, so the result is {{ "within" if within_tolerance else "outside" }} tolerance.{{ " On a test set this small the noise is still large, so read the probabilities with caution." if not within_tolerance else "" }}
+
+## 4. Performance by segment
+
+| Segment | n | Churners | Base rate | Mean p | Reliable |
+|---|---|---|---|---|---|
+{% for s in segments %}| {{ s.feature }}: {{ s.value }} | {{ s.n }} | {{ s.n_pos }} | {{ "%.3f"|format(s.base_rate) }} | {{ "%.3f"|format(s.mean_p) }} | {{ "yes" if s.reliable else "no" }} |
+{% endfor %}
+Segments marked as not reliable are too small or contain only one class; their figures must not be used for decisions.
+
+## 5. Contact decision and business value
+
+Break-even threshold p* = {{ "%.4f"|format(p_star) }}; campaign capacity on the test set k = {{ k_test }}.
+
+| Policy | Contacts | Churners contacted | Net value ({{ currency }}){{ " (conditional value)" if conditional else "" }} |
+|---|---|---|---|
+{% for row in policies %}| {{ row.name }} | {{ row.n_contacts }} | {{ "%.1f"|format(row.n_churners_contacted) }} | {{ "{:,.0f}".format(row.net_value) }} |
+{% endfor %}
+Incremental value of the model versus no contact: {{ "{:,.0f}".format(inc_vs_none) }} {{ currency }}{{ " (conditional value)" if conditional else "" }}.
+Incremental value of the model versus random contact: {{ "{:,.0f}".format(inc_vs_random) }} {{ currency }}{{ " (conditional value)" if conditional else "" }}.
+{% if be_vs_none is not none %}Break-even save_rate versus no contact: {{ "%.3f"|format(be_vs_none) }}.
+{% endif %}
+## 6. Excluded columns: a policy decision with a measured cost
+
+`{{ ablation.columns|join("` and `") }}` are excluded from the features by manual policy (`leakage.policy = {{ ablation.policy }}`). This is a policy decision, not a demonstrated case of leakage.
+
+| Column | abs. correlation with label | Detector limit |
+|---|---|---|
+{% for c in ablation.corr_rows %}| {{ c.column }} | {{ "%.3f"|format(c.abs_corr) }} | {{ "%.2f"|format(ablation.threshold) }} |
+{% endfor %}
+{% if ablation.detector_flagged %}The correlation detector flagged: {{ ablation.detector_flagged|join(", ") }}.{% else %}The correlation detector did not flag either column; the exclusion does not come from the detector.{% endif %}
+
+The reason for excluding them is plausible: both accumulate over a customer's lifetime, and for a churner they stop at the point of churn, so a model that uses them partly measures how long customers stayed. This cannot be verified with this data, because it has no dates (no signup, snapshot, or churn date) from which to show when the values were measured relative to the prediction.
+
+Cost of the policy, on the test set, over {{ ablation.n_seeds }} random splits (diagnostic only; the official model above does not use these columns):
+
+| Metric | Without (official) | With both columns | Change (mean) | Change (sd) | Splits where "with" is better |
+|---|---|---|---|---|---|
+{% for r in ablation.rows %}| {{ r.label }} | {{ "%.3f"|format(r.without) }} | {{ "%.3f"|format(r.with) }} | {{ "%+.3f"|format(r.delta) }} | {{ "%.3f"|format(r.delta_sd) }} | {{ r.seeds_better }} of {{ ablation.n_seeds }} |
+{% endfor %}
+Using both columns raises PR-AUC by {{ "%.3f"|format(ablation.pr_auc.delta) }} on average.{% if ablation.n_selection_changed %} The selected model changes from `{{ ablation.selected_without }}` to `{{ ablation.selected_with }}` in {{ ablation.n_selection_changed }} of {{ ablation.n_seeds }} splits.{% else %} The selected model does not change.{% endif %} The splits are different random partitions of the same rows, so consistency across them is not an independent replication or a significance test.
+
+If `tenure` and `TotalCharges` are known to be measured at or before the time a prediction would be made (for example, from a dated snapshot), the policy should be revisited. If they are measured at observation time, the higher score would not carry over to real prediction.
+
+## 7. Limitations
+
+- `tenure` and `TotalCharges` are excluded by policy, not because leakage was demonstrated; the measured cost of that policy is in the section on excluded columns.
+- The data has one row per customer and no dates: there is no prediction window and no temporal validation.
+- Business value depends on save_rate; until it is measured in a controlled trial, the net-value figures are a scenario, not a forecast of results.
+
+---
+
+source_hash: `{{ source_hash }}`
+- assumptions.yaml: `{{ hashes.assumptions }}`
+- metrics.json: `{{ hashes.metrics }}`
+- roi.json: `{{ hashes.roi }}`
+- ablation.json: `{{ hashes.ablation }}`

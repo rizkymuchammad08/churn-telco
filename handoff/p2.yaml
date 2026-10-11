@@ -1,0 +1,51 @@
+part: P2
+adapter: telco_ibm_csv_nontemporal
+files:
+  - src/data/load.py
+  - src/data/validate.py
+  - src/data/sample.py
+  - src/data/synthetic.py
+  - src/data/fixtures.py
+  - src/data/dictionary.py
+  - data/sample.csv
+  - tests/fixtures/broken/expected.yaml
+  - tests/fixtures/broken/empty_rows.csv
+  - tests/fixtures/broken/missing_column.csv
+  - tests/fixtures/broken/duplicate_id.csv
+  - tests/fixtures/broken/null_id.csv
+  - tests/fixtures/broken/bad_label.csv
+  - tests/fixtures/broken/null_category.csv
+  - tests/fixtures/broken/null_tenure.csv
+  - tests/fixtures/broken/null_totalcharges_with_tenure.csv
+  - tests/fixtures/broken/negative_monthly.csv
+  - tests/fixtures/broken/nonnumeric_totalcharges.csv
+  - tests/fixtures/broken/ragged_row.csv
+  - docs/data_dictionary.md
+  - notebooks/01_data.ipynb
+  - scripts/build_notebook_01.py
+  - tests/test_data.py
+yaml_keys_consumed:
+  params: [seed, data_source, data_source_allowed, paths, sample, schema, leakage]
+  assumptions: [baseline_churn_rate]
+yaml_keys_produced:
+  params: []
+  assumptions: []
+public_api:
+  - data.load.load_raw(source, params) -> DataFrame
+  - data.load.clean(df, params, name="data") -> DataFrame
+  - data.load.data_hash(df) -> str
+  - data.load.DataLoadError(code, message)
+  - data.validate.validate(events, params) -> ValidationReport
+  - data.validate.banner(params) -> str | None
+  - data.sample.make_sample(raw, params) -> DataFrame
+  - data.synthetic.generate(seed, params, base_rate=None) -> (events, p_true)
+  - data.fixtures.build(params) -> (texts, expected)
+  - data.dictionary.build_dictionary(raw, params) -> str
+entry_points:
+  - python -m src.data.validate --sample
+  - python -m src.data.validate --path FILE
+  - python -m src.data.sample [--check]
+  - python -m src.data.fixtures [--check]
+  - python -m src.data.dictionary [--check]
+check: make check-p2
+open_issues: []

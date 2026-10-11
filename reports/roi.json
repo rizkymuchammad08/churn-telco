@@ -1,0 +1,41 @@
+{
+  "data_source": "real_public_ibm_telco",
+  "business_status": "conditional",
+  "save_rate_source": "assumed",
+  "currency": "USD",
+  "years": 1,
+  "n_test": 1409,
+  "k_test": 140,
+  "p_star": 0.13333333333333333,
+  "inputs": {
+    "clv": 1200,
+    "cost_intervention": 40,
+    "save_rate": 0.25,
+    "operating_cost_per_year": 0.0
+  },
+  "policies": {
+    "no_contact": {
+      "n_contacts": 0,
+      "n_churners_contacted": 0,
+      "net_value": 0.0
+    },
+    "model_p_star": {
+      "n_contacts": 140,
+      "n_churners_contacted": 97,
+      "net_value": 23500.0
+    },
+    "random_k": {
+      "n_contacts": 140,
+      "n_churners_contacted": 37.1611071682044,
+      "net_value": 5548.332150461321
+    }
+  },
+  "incremental": {
+    "model_vs_no_contact": 23500.0,
+    "model_vs_random_k": 17951.66784953868
+  },
+  "breakeven_save_rate": {
+    "model_vs_no_contact": 0.048109965635738834,
+    "model_vs_random_k": 0.0
+  }
+}

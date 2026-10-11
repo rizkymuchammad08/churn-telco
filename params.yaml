@@ -1,0 +1,137 @@
+# Technical parameters. Business figures live only in assumptions.yaml.
+# k (campaign capacity) is derived from assumptions.yaml and must not appear in this file.
+seed: 42
+data_source: real_public_ibm_telco
+data_source_allowed: [real_public_ibm_telco, synthetic]
+
+paths:
+  raw: data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv
+  sample: data/sample.csv
+  artifacts_dir: artifacts
+  reports_dir: reports
+  metrics: reports/metrics.json
+  roi: reports/roi.json
+  ablation: reports/ablation.json
+  monitoring: reports/monitoring.json
+
+sample:
+  n_rows: 1000
+
+schema:
+  id_column: customerID
+  label_column: Churn
+  positive_label: "Yes"
+  negative_label: "No"
+  required_columns:
+    - customerID
+    - gender
+    - SeniorCitizen
+    - Partner
+    - Dependents
+    - tenure
+    - PhoneService
+    - MultipleLines
+    - InternetService
+    - OnlineSecurity
+    - OnlineBackup
+    - DeviceProtection
+    - TechSupport
+    - StreamingTV
+    - StreamingMovies
+    - Contract
+    - PaperlessBilling
+    - PaymentMethod
+    - MonthlyCharges
+    - TotalCharges
+    - Churn
+  int_columns: [SeniorCitizen, tenure]
+  float_columns: [MonthlyCharges, TotalCharges]
+  nullable_when_tenure_zero: TotalCharges
+
+# Ablation of tenure/TotalCharges (reported separately; does not change the leakage policy below).
+ablation:
+  seeds: [42, 43, 44, 45, 46]   # different random splits; deltas are reported as mean and spread
+
+# Path A: one row per customer, no time axis.
+# For a temporal split: set temporal true, split.type temporal, window_days, and purge_gap_days >= window_days,
+# plus schema.snapshot_column (a per-row date column, which must be in schema.required_columns).
+# Telco data has no dates, so the default below stays false.
+temporal: false
+
+leakage:
+  flagged_columns: [tenure, TotalCharges]
+  policy: exclude
+  # Features whose |corr| with the label exceeds this threshold are treated as leaking (a guardrail, not proof).
+  max_abs_corr: 0.9
+
+split:
+  type: random_stratified
+  train_frac: 0.6
+  calib_frac: 0.2
+  test_frac: 0.2
+  cv_folds: 5
+
+models:
+  primary_metric: pr_auc
+  baselines: [prior_rate, logistic_regression]
+  candidates: [gradient_boosting]
+  class_weight: balanced   # balanced | none; weights are computed from train labels only
+  hyperparams:
+    logistic_regression: {C: 1.0, max_iter: 1000}
+    gradient_boosting: {n_estimators: 100, learning_rate: 0.1, max_depth: 3}
+
+# Light hyperparameter tuning (src/models/tuning.py). Scored by CV on train rows only; the test set is untouched.
+# Decision rule, fixed before any run: the best grid candidate replaces the default in models.hyperparams only
+# if its mean paired gain over the default across folds is positive and larger than margin_se standard errors
+# of that gain; otherwise the default stays. List simpler / more regularized values first (ties go to the
+# earlier candidate). The default value of every grid key must appear in its grid.
+# rule_lock is the sha256 of the whole rule (grids, defaults, margin, offset, metric, folds, class_weight).
+# Changing any of them makes the run stop until the lock is rewritten with
+# `python -m src.models.tuning --write-lock`; commit that change before running `make train`.
+tuning:
+  enabled: true
+  method: grid
+  seed_offset: 1000   # tuning folds use seed + seed_offset, so they differ from the model-selection folds
+  margin_se: 1.0
+  rule_lock: "3438986f4849f68d2d686fab96d7e60cde4d13a99bf52f2f2bc8d2b8c00bea61"
+  grids:
+    logistic_regression:
+      C: [0.1, 0.3, 1.0, 3.0]
+    gradient_boosting:
+      learning_rate: [0.05, 0.1]
+      max_depth: [2, 3]
+
+calibration:
+  method: isotonic
+
+evaluation:
+  ece_bins: 10
+  bootstrap_resamples: 1000   # row resamples of the test set for the confidence intervals in metrics.json
+  ci_level: 0.95              # central (percentile) interval; must be in (0, 1)
+  calibration_tolerance: 0.05   # ECE limit after calibration on a large test set (tests use synthetic data)
+
+# Per-segment evaluation. Segments with n < min_n are flagged unreliable.
+segments:
+  by: [Contract, InternetService, SeniorCitizen]
+  min_n: 30
+
+# Scoring domain. Customers with tenure (in months, the Telco data unit) below this limit are flagged out_of_domain at prediction time.
+domain:
+  min_tenure_months: 1
+
+# Input-drift monitoring (src/models/monitoring.py). reports/monitoring.json is generated from the train rows by
+# `make train` (do not edit it by hand): every model feature gets a reference distribution and the thresholds below.
+# PSI = population stability index between a scoring-time batch and the train rows; the cut-offs are the usual
+# rule-of-thumb values, not calibrated on this data. Changing any value here makes the committed file stale
+# (E_MONITOR_STALE) until `make train` is run again.
+# rule_lock is the sha256 of the rule (psi_warn, psi_alert, n_bins, max_discrete_levels, psi_eps, min_rows).
+# Changing any of them makes the run stop (E_MONITOR_LOCK) until the lock is rewritten with
+# `python -m src.models.monitoring --write-lock`; commit that change before running `make train`.
+monitoring:
+  rule_lock: "d9e761020dd21f1e7447b404b8321d31a7ad056fed2ef6b1a001fda460a1dddc"
+  psi_warn: 0.1
+  psi_alert: 0.25
+  n_bins: 10                 # quantile bins for a feature with more than max_discrete_levels distinct train values
+  max_discrete_levels: 10    # at most this many distinct train values: monitored level by level, plus an "other" bucket
+  psi_eps: 0.0001            # floor on a bin share inside the PSI log ratio, so an empty bin does not give infinity
+  min_rows: 200              # a scoring batch smaller than this is not assessed (PSI is too noisy)

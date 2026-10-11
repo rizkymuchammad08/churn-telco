@@ -1,0 +1,14 @@
+# Exact versions of the numerical stack that reproduce reports/metrics.json byte for byte
+# (see the "environment" block in that file). Use as a constraints file, not a requirements list:
+#   pip install -c constraints.txt -e ".[dev]"
+# These pins need Python 3.11 or newer (numpy 2.4, pandas 3.0), which is also the minimum in
+# pyproject.toml; the lower bounds there stay looser. Packages not listed here (streamlit, test and notebook tools) are
+# not pinned. Regenerate from a clean virtualenv with `make freeze` after re-running `make all`.
+numpy==2.4.4
+pandas==3.0.2
+scikit-learn==1.8.0
+scipy==1.17.1
+joblib==1.5.3
+pyyaml==6.0.3
+jinja2==3.1.6
+openpyxl==3.1.5

@@ -1,0 +1,11 @@
+bad_label.csv: E_LABEL_DOMAIN
+duplicate_id.csv: E_DUP_ID
+empty_rows.csv: E_EMPTY
+missing_column.csv: E_COLUMNS_MISSING
+negative_monthly.csv: E_NEGATIVE_NUMERIC
+nonnumeric_totalcharges.csv: E_NONNUMERIC
+null_category.csv: E_NULL_CATEGORY
+null_id.csv: E_NULL_ID
+null_tenure.csv: E_NULL_NUMERIC
+null_totalcharges_with_tenure.csv: E_NULL_NUMERIC
+ragged_row.csv: E_CSV_PARSE
